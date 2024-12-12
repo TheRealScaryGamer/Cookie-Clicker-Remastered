@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A fan-made remaster of the hit 2013 game 'Cookie Clicker'">
+    <title>Cookie Clicker Remastered</title>
+    
+    <style>
+        /* Style for canvas remains the same */
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            border: 1px solid black;
+        }
+    
+        /* Restart Button Styles */
+        #restartButton {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            padding: 20px 40px;
+            font-size: 24px;
+            cursor: pointer;
+            background-color: #ff4444;
+            border-radius: 10px;
+            color: white;
+            border: none;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+    
+        #restartButton:hover {
+            background-color: #ff2222;
+            transform: scale(1.05);
+        }
+    
+        /* Shop Button Styles */
+        #shopButton {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            font-size: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+    
+        #shopButton:hover {
+            background-color: #ffaa00;
+            transform: scale(1.05);
+        }
+    
+        /* Confirmation Panel */
+        #confirmationPanel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+        }
+    
+        #confirmationPanel button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+    
+        #confirmationPanel button:hover {
+            background-color: #ff4444;
+        }
+    
+        /* Shop Panel */
+        #shopPanel {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+        }
+    
+        /* Buy Power-Up Button */
+        #buyPowerUp {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #6d6d6c;
+            border: none;
+            border-radius: 5px;
+            margin-top: 10px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+    
+        #buyPowerUp:hover {
+            background-color: #5c5c5c;
+            transform: scale(1.05);
+        }
+    
+        /* Buy Skin Buttons */
+        .buySkin {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #555;
+            border: none;
+            border-radius: 5px;
+            margin: 5px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+    
+        .buySkin:hover {
+            background-color: #777;
+            transform: scale(1.05);
+        }
+    
+        /* Close Shop Button */
+        #closeShop {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #ff4444;
+            border: none;
+            border-radius: 5px;
+            margin-top: 10px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+    
+        #closeShop:hover {
+            background-color: #ff2222;
+            transform: scale(1.05);
+        }
+    </style>
+    
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <button id="restartButton">Restart</button>
+    <button id="shopButton">Open Shop</button>
+
+    <div id="confirmationPanel">
+        <p>Are you sure you want to restart the game?</p>
+        <button id="confirmYes">Yes</button>
+        <button id="confirmNo">No</button>
+    </div>
+
+    <div id="shopPanel">
+        <h3>Power-up Shop</h3>
+        <p>Score: <span id="scoreDisplay">0</span></p>
+        <p>Power-up Price: <span id="powerUpPrice">100</span></p>
+        <button id="buyPowerUp">Buy Power-Up</button>
+        
+        <h3>Skins</h3>
+        <div id="skinOptions">
+            <button class="buySkin" data-skin="default" data-price="0">Default Cookie (Free)</button>
+            <button class="buySkin" data-skin="frosted" data-price="250">Frosted Cookie (250)</button>
+            <button class="buySkin" data-skin="candy" data-price="500">Candy Cookie (500)</button>
+            <button class="buySkin" data-skin="eightbit" data-price="750">8bit Cookie (750)</button>
+            <button class="buySkin" data-skin="golden" data-price="1000">Golden Cookie (1000)</button>
+        </div>
+        
+        <button id="closeShop">Close Shop</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        window.addEventListener("resize", function() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        function Sprite(imageSrc) {
+            this.image = new Image();
+            this.image.src = imageSrc;
+            this.width = 200;
+            this.height = 200;
+
+            this.image.onload = () => {
+                this.loaded = true;
+            };
+
+            this.loaded = false;
+
+            this.draw = function() {
+                if (this.loaded) {
+                    this.x = (canvas.width - this.width) / 2;
+                    this.y = (canvas.height - this.height) / 2;
+                    ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+                }
+            };
+
+            this.isClicked = function(mouseX, mouseY) {
+                return mouseX >= this.x && mouseX <= this.x + this.width &&
+                       mouseY >= this.y && mouseY <= this.y + this.height;
+            };
+        }
+
+        let Score = parseInt(localStorage.getItem("Score")) || 0;
+        let PowerUpLevel = parseInt(localStorage.getItem("PowerUpLevel")) || 1;
+        let PowerUpPrice = parseInt(localStorage.getItem("PowerUpPrice")) || 100;
+
+        let currentSkin = localStorage.getItem("currentSkin") || "default";
+        let purchasedSkins = JSON.parse(localStorage.getItem("purchasedSkins")) || ["default"];
+
+        const skins = {
+            default: { price: 0, image: "C:/Users/Scary/OneDrive/Pictures/Cookie.jpg" },
+            frosted: { price: 250, image: "C:/Users/Scary/OneDrive/Pictures/FrostedCookie.jpg" },
+            candy: { price: 500, image: "C:/Users/Scary/OneDrive/Pictures/CandyCookie.jpg" },
+            eightbit: { price: 750, image: "C:/Users/Scary/OneDrive/Pictures/8BitCookie.jpg" },
+            golden: { price: 1000, image: "C:/Users/Scary/OneDrive/Pictures/GoldenCookie.jpg" },
+        };
+
+        if (!skins[currentSkin]) {
+            currentSkin = "default";
+            localStorage.setItem("currentSkin", currentSkin);
+        }
+
+        const Cookie = new Sprite(skins[currentSkin].image);
+
+        function applySkin() {
+            Cookie.image.src = skins[currentSkin].image;
+            Cookie.image.onload = () => {
+                Cookie.loaded = true;
+                Cookie.draw(); 
+            };
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById("scoreDisplay").innerText = Score;
+            document.getElementById("powerUpPrice").innerText = PowerUpPrice;
+        }
+
+        // Restart button logic
+document.getElementById("restartButton").addEventListener("click", function() {
+    // Show confirmation panel
+    document.getElementById("confirmationPanel").style.display = "block";
+});
+
+document.getElementById("confirmYes").addEventListener("click", function() {
+    // Reset the game state
+    Score = 0;
+    PowerUpLevel = 1;
+    PowerUpPrice = 100;
+    currentSkin = "default";
+    purchasedSkins = ["default"];
+
+    // Clear localStorage to reset saved data
+    localStorage.setItem("Score", Score);
+    localStorage.setItem("PowerUpLevel", PowerUpLevel);
+    localStorage.setItem("PowerUpPrice", PowerUpPrice);
+    localStorage.setItem("currentSkin", currentSkin);
+    localStorage.setItem("purchasedSkins", JSON.stringify(purchasedSkins));
+
+    // Hide confirmation panel
+    document.getElementById("confirmationPanel").style.display = "none";
+
+    // Reset canvas state
+    Cookie.image.src = skins[currentSkin].image;
+    Cookie.image.onload = () => {
+        Cookie.loaded = true;
+        Cookie.draw();
+    };
+
+    updateScoreDisplay();
+});
+
+document.getElementById("confirmNo").addEventListener("click", function() {
+    document.getElementById("confirmationPanel").style.display = "none";
+});
+
+
+  // Power-Up Buy Logic
+  document.getElementById("buyPowerUp").addEventListener("click", function() {
+    if (Score >= PowerUpPrice) {
+        // Deduct score and increase power-up level
+        Score -= PowerUpPrice;
+        PowerUpLevel++;
+
+        // Keep the if-else structure as requested, fixing the price updates
+        if (PowerUpLevel <= 10) {
+            PowerUpPrice += 100; // Increases by 100 for each level up to 10
+        } else if (PowerUpLevel <= 15) {
+            PowerUpPrice += 250; // Increases by 250 for levels 11 to 15
+        } else if (PowerUpLevel <= 20) {
+            PowerUpPrice += 500; // Increases by 500 for levels 16 to 20
+        } else if (PowerUpLevel <= 25) {
+            PowerUpPrice += 750; // Increases by 750 for levels 21 to 25
+        } else if (PowerUpLevel >= 26) {
+            PowerUpPrice += 1000;
+        }
+
+        // Save the updated data to localStorage
+        localStorage.setItem("Score", Score);
+        localStorage.setItem("PowerUpLevel", PowerUpLevel);
+        localStorage.setItem("PowerUpPrice", PowerUpPrice);
+
+        // Update the shop panel
+        updateScoreDisplay();
+    } else {
+        alert("Not enough score to buy power-up!");
+
+        // Optionally, you can still update the shop panel or other elements if needed
+        updateScoreDisplay();
+    }
+});
+
+
+// Update the power-up display and score display
+function updateScoreDisplay() {
+    document.getElementById("scoreDisplay").innerText = Score;
+    document.getElementById("powerUpPrice").innerText = PowerUpPrice;
+}
+
+// Use the power-up level to increase the score per click
+canvas.addEventListener("click", function(event) {
+    const mouseX = event.offsetX;
+    const mouseY = event.offsetY;
+
+    if (Cookie.isClicked(mouseX, mouseY)) {
+        Score += PowerUpLevel; // Increase score by PowerUpLevel + 1 (base score)
+        localStorage.setItem("Score", Score);
+        updateScoreDisplay();
+    }
+});
+
+
+        document.querySelectorAll(".buySkin").forEach(button => {
+            button.addEventListener("click", function() {
+                const skin = this.getAttribute("data-skin");
+                const price = parseInt(this.getAttribute("data-price"));
+
+                if (purchasedSkins.includes(skin)) {
+                    // Allow skin swap
+                    currentSkin = skin;
+                    localStorage.setItem("currentSkin", currentSkin);
+                    applySkin();
+                    updateScoreDisplay();
+                } else {
+                    if (Score >= price) {
+                        Score -= price;
+                        purchasedSkins.push(skin);
+                        localStorage.setItem("purchasedSkins", JSON.stringify(purchasedSkins));
+                        localStorage.setItem("currentSkin", skin);
+                        localStorage.setItem("Score", Score);
+                        applySkin();
+                        updateScoreDisplay();
+                    } else {
+                        alert("Not enough Score!");
+                    }
+                }
+            });
+        });
+
+        document.getElementById("shopButton").addEventListener("click", function() {
+            document.getElementById("shopPanel").style.display = "block";
+        });
+
+        document.getElementById("closeShop").addEventListener("click", function() {
+            document.getElementById("shopPanel").style.display = "none";
+        });
+
+        applySkin();
+        updateScoreDisplay();
+
+
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            applySkin();
+            Cookie.draw();
+
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + Score, 10, 30);
+            ctx.fillText("Power-Up Level: " + PowerUpLevel, 10, 60);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html> 
